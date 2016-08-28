@@ -266,16 +266,14 @@ module rInnerTopCube(size=[1,1,1], center=false, radius=1, radius1, radius2, deb
 	}
 }
 
-radius = 2;
-
-debug = true;
+debug = false;
 difference() {
-	rcube([14,12,10], radius=radius, debug=debug, center=true);
+	rcube([14,12,10], radius=1, ce=false, center=true, debug=debug);
 	union() {
 		translate([0,0,1]) {
-			rcube([10,8,9], radius=2.5, bo=true, to=false, fr=true, le=true, debug=false, center=true);
+			rcube([10,8,9], radius=2.5, bo=true, to=false, fr=false, le=false, debug=debug, center=true);
 		}
-		rInnerTopCube([10,8,10], f=true, l=true, radius1 = 1, radius2=2.5, debug=false, center=true);
+		rInnerTopCube([10,8,10], f=false, l=false, radius1 = 1, radius2=2.5, debug=debug, center=true);
 	}
 }
 
