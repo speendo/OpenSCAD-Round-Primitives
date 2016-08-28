@@ -1,4 +1,4 @@
-$fn=30;
+$fn=20;
 
 module rcube(size=[1,1,1], center=false, radius=1, debug=false,
 		bo, ce, to,
@@ -109,7 +109,7 @@ module rcube(size=[1,1,1], center=false, radius=1, debug=false,
 					if(tl) {
 						roundEdge(y,[-x/2 + radius,0,z/2 - radius],[270,180,0]);
 					}
-			
+
 					// corners
 					if(bf && bl && cfl) {
 						roundFullCorner([-x/2 + radius,-y/2 + radius,-z/2 + radius], [180,90,0]);
@@ -142,7 +142,7 @@ module rcube(size=[1,1,1], center=false, radius=1, debug=false,
 }
 
 module rInnerTopCube(size=[1,1,1], center=false, radius=1, radius1, radius2, debug=false,
-		f=true, r=true, b=true, l=true, convexity=10, $fn=50) {
+		f=true, r=true, b=true, l=true, convexity=10, $fn=$fn) {
 
 	// define radius1 and radius2
 	radius1 = radius1 == undef ? radius : radius1;
@@ -153,10 +153,10 @@ module rInnerTopCube(size=[1,1,1], center=false, radius=1, radius1, radius2, deb
 			rotate(rotation) {
 				difference() {
 					translate([-1/2,0,0]) {
-						cube([radius1 + 1, 2*radius1, length - 2*radius1], center=true);
+						cube([radius1 + 1, 2*radius1, length], center=true);
 					}
 					translate([radius1/2,-radius1,0]) {
-						cylinder(h=length-2*radius1, r=radius1, center=true);
+						cylinder(h=length, r=radius1, center=true);
 					}
 				}
 			}
@@ -165,17 +165,19 @@ module rInnerTopCube(size=[1,1,1], center=false, radius=1, radius1, radius2, deb
 	module roundCorner1(translation=[0,0,0], rotation=[0,0,0]) {
 		translate(translation) {
 			rotate(rotation) {
-				difference() {
-#					cube([2*radius1 + 1,2*radius1 + 1,radius1 + 1]);
-					union() {
-						translate([0,-1,0]) {
-							rotate([270,0,0]) {
-								cylinder(h=radius1 + 3, r=radius1);
+				if (radius1 > radius2) {
+					difference() {
+						cube([2*radius1 + 1,2*radius1 + 1,radius1 + 1]);
+						union() {
+							translate([0,-1,0]) {
+								rotate([270,0,0]) {
+									cylinder(h=2*radius1 + 3, r=radius1);
+								}
 							}
-						}
-						translate([-1,,0]) {
-							rotate([0,90,0]) {
-								cylinder(h=radius1 + 3, r=radius1);
+							translate([-1,,0]) {
+								rotate([0,90,0]) {
+									cylinder(h=2*radius1 + 3, r=radius1);
+								}
 							}
 						}
 					}
@@ -184,19 +186,21 @@ module rInnerTopCube(size=[1,1,1], center=false, radius=1, radius1, radius2, deb
 		}
 	}
 	module roundCorner2(translation=[0,0,0], rotation=[0,0,0]) {
-		translate(translation) {
-			rotate(rotation) {
-				difference() {
-					translate([-2*radius,-2*radius,0]) {
-						cube([1.5*radius2 + 1,1.5*radius2 + 1,radius2]);
-					}
-					difference() {
-						translate([0,0,-1]) {
-							cylinder(h=radius2 + 3, r=2*radius2);
+		if (radius2 > 0) {
+			translate(translation) {
+				rotate(rotation) {
+					intersection() {
+						translate([-radius1-radius2,-radius1-radius2,0]) {
+							cube([radius1+radius2+1,radius1+radius2+1,radius2 + 1]);
 						}
-						rotate_extrude(convexity=convexity) {
-							translate([2*radius2,0,0]) {
-								circle(r=radius2, $fn=$fn);
+						difference() {
+							translate([0,0,-1]) {
+								cylinder(h=radius2 + 3, r=radius1+radius2);
+							}
+							rotate_extrude(convexity=convexity) {
+								translate([radius1+radius2,0,0]) {
+									circle(r=radius1, $fn=$fn);
+								}
 							}
 						}
 					}
@@ -204,54 +208,59 @@ module rInnerTopCube(size=[1,1,1], center=false, radius=1, radius1, radius2, deb
 			}
 		}
 	}
+	
+	function pos1(pos) = pos > 0 ? pos + radius1 : pos - radius1;
+	function pos2(pos) = pos > 0 ? pos - radius2 : pos + radius2;
+
+	module roundCorner(translation=[0,0,0], rotation=[0,0,0]) {
+		intersection() {
+			roundCorner1([pos1(translation[0]), pos1(translation[1]), translation[2]], rotation);
+			roundCorner2([pos2(translation[0]), pos2(translation[1]), translation[2]], rotation);
+		}
+	}
+
+	function rFR() = (f && r == true) ? true : false;
+	function rRB() = (r && b == true) ? true : false;
+	function rBL() = (b && l == true) ? true : false;
+	function rLF() = (l && f == true) ? true : false;
+	
+	function longerRadius() = radius1 > radius2 ? radius1 : radius2;
+	
+	function edgeLength(length, c1, c2) = (c1 == true) ? ((c2 == true) ? length - 2*longerRadius() : length - longerRadius()) : ((c2 == true) ? length - longerRadius() : length);
+	
+	function edgePosition(c1, c2) = (c1 == c2) ? 0 : ((c1 == true) ? 1*longerRadius()/2 : -longerRadius()/2);
 
 	if(!debug) {
 		x = size[0];
 		y = size[1];
 		z = size[2];
 		
-		difference() {
-			union() {
-				// edges
-				if(f) {
-					roundEdge(x,[0,-y/2,(z-radius1)/2],[0,90,0]);
-				}
-				if(r) {
-					roundEdge(y,[x/2,0,(z-radius1)/2],[270,90,0]);
-				}
-				if(b) {
-					roundEdge(x,[0,y/2,(z-radius1)/2],[180,90,0]);
-				}
-				if(l) {
-					roundEdge(y,[-x/2,0,(z-radius1)/2],[90,90,0]);
-				}
-				// corners1
-				if(f && r) {
-//					roundCorner1([x/2 + radius1,-y/2 - radius1,z/2-radius1], [0,0,90]);
-					roundCorner2([x/2 - radius1,-y/2 + radius1,z/2-radius1], [0,0,90]);
-				}
-				if(r && b) {
-//					roundCorner1([x/2 + radius1,y/2 + radius1,z/2-radius1], [0,0,180]);
-				}
-				if(b && l) {
-//					roundCorner1([-x/2 - radius1,y/2 + radius1,z/2-radius1], [0,0,270]);
-				}
-				if(l && f) {
-//					roundCorner1([-x/2 - radius1,-y/2 - radius1,z/2-radius1], [0,0,0]);
-				}
+		union() {
+			// edges
+			if(f) {
+				roundEdge(edgeLength(x, rFR(), rLF()),[edgePosition(rLF(), rFR()),-y/2,(z-radius1)/2],[0,90,0]);
 			}
-			// corners2
-			if(f && r) {
-				roundCorner2([x/2 - radius1,-y/2 + radius1,z/2-radius1], [0,0,90]);
+			if(r) {
+				roundEdge(edgeLength(y, rFR(), rRB()),[x/2,edgePosition(rFR(), rRB()),(z-radius1)/2],[270,90,0]);
 			}
-			if(r && b) {
-				roundCorner2([x/2 - radius1,y/2 - radius1,z/2-radius1], [0,0,180]);
+			if(b) {
+				roundEdge(edgeLength(x, rRB(), rBL()),[edgePosition(rBL(), rRB()),y/2,(z-radius1)/2],[180,90,0]);
 			}
-			if(b && l) {
-				roundCorner2([-x/2 + radius1,y/2 - radius1,z/2-radius1], [0,0,270]);
+			if(l) {
+				roundEdge(edgeLength(y, rBL(), rLF()),[-x/2,edgePosition(rLF(), rBL()),(z-radius1)/2],[90,90,0]);
 			}
-			if(l && f) {
-				roundCorner2([-x/2 + radius1,-y/2 + radius1,z/2-radius1], [0,0,0]);
+			// corners
+			if(rFR()) {
+				roundCorner([x/2,-y/2,z/2-radius1], [0,0,90]);
+			}
+			if(rRB()) {
+				roundCorner([x/2,y/2,z/2-radius1], [0,0,180]);
+			}
+			if(rBL()) {
+				roundCorner([-x/2,y/2,z/2-radius1], [0,0,270]);
+			}
+			if(rLF()) {
+				roundCorner([-x/2,-y/2,z/2-radius1], [0,0,0]);
 			}
 		}
 	}
@@ -264,10 +273,9 @@ difference() {
 	rcube([14,12,10], radius=radius, debug=debug, center=true);
 	union() {
 		translate([0,0,1]) {
-			rcube([10,8,9], radius=radius, bo=false, to=false, debug=false, center=true);
+			rcube([10,8,9], radius=2.5, bo=true, to=false, fr=true, le=true, debug=false, center=true);
 		}
-		rInnerTopCube([10,8,10], radius=radius, debug=false, center=true);
+		rInnerTopCube([10,8,10], f=true, l=true, radius1 = 1, radius2=2.5, debug=false, center=true);
 	}
 }
-
 
