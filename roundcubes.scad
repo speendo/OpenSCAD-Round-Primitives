@@ -174,7 +174,7 @@ module rInnerTopCube(size=[1,1,1], center=false, radius=1, radius1, radius2, deb
 									cylinder(h=2*radius1 + 3, r=radius1);
 								}
 							}
-							translate([-1,,0]) {
+							translate([-1,0,0]) {
 								rotate([0,90,0]) {
 									cylinder(h=2*radius1 + 3, r=radius1);
 								}
